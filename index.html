@@ -456,7 +456,7 @@
                 ];
 
                 // Delays em escadinha (0 frames, 9 frames (~150ms), 18 frames (~300ms))
-                const delays = [0, 9, 18];
+                const delays = [0, 14, 28];
                 const offsets = [-16, 0, 16];
 
                 for (let i = 0; i < 3; i++) {
@@ -471,8 +471,8 @@
                         targetY: selectedTarget.y + hullPoints[i].y,
                         progress: 0,
                         delay: delays[i],
-                        speed: 0.022, // velocidade fluida para ver bem a subida e descida
-                        arcHeight: 52 + i * 4,
+                        speed: 0.015, // voo mais cadenciado e suave
+                        arcHeight: 62 + i * 5,
                         hasHit: false
                     });
                 }
@@ -637,7 +637,7 @@
             }
 
             for (let i = activeExplosions.length - 1; i >= 0; i--) {
-                activeExplosions[i].frame += 0.45;
+                activeExplosions[i].frame += 0.26;
                 if (Math.floor(activeExplosions[i].frame) >= explosionSpriteFrames.length) {
                     activeExplosions.splice(i, 1);
                 }
@@ -652,8 +652,8 @@
 
             for (let i = damageNumbers.length - 1; i >= 0; i--) {
                 const d = damageNumbers[i];
-                d.y -= 0.6;
-                d.alpha -= 0.016;
+                d.y -= 0.4;
+                d.alpha -= 0.009;
                 if (d.alpha <= 0) damageNumbers.splice(i, 1);
             }
         }
@@ -842,7 +842,10 @@
                 const img = explosionSpriteFrames[idx];
                 if (img) {
                     ctx.save();
-                    ctx.drawImage(img, ex.x - img.width / 2, ex.y - img.height / 2);
+                    // Escala 1.3x para apreciar bem o fogo e os estilhaços de madeira
+                    const w = img.width * 1.35;
+                    const h = img.height * 1.35;
+                    ctx.drawImage(img, ex.x - w / 2, ex.y - h / 2, w, h);
                     ctx.restore();
                 }
             }
