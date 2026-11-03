@@ -310,18 +310,19 @@
             {
                 id: 'npc1',
                 type: 'ship',
-                name: 'Magellano',
+                name: 'Magellano (Treino)',
                 x: window.innerWidth * 0.7,
                 y: window.innerHeight * 0.35,
                 targetX: window.innerWidth * 0.7,
                 targetY: window.innerHeight * 0.35,
-                maxHp: 65000,
-                hp: 65000,
+                maxHp: 999999999,
+                hp: 999999999,
                 speed: 1.2,
                 angle: Math.PI,
                 currentFrame: 4,
                 moveTimer: 0,
-                radius: 40
+                radius: 40,
+                underAttack: false
             },
             {
                 id: 'monster1',
@@ -403,6 +404,7 @@
             if (dist > 520) return;
 
             player.rechargeTimer = player.rechargeTotal;
+            if (selectedTarget) selectedTarget.underAttack = true;
 
             if (selectedTarget.type === 'monster') {
                 // Arpão no monstro: 1 tiro reto veloz
@@ -523,20 +525,25 @@
             for (let t of targets) {
                 if (t.hp <= 0) continue;
                 if (t.type === 'ship') {
-                    t.moveTimer++;
-                    if (t.moveTimer > 220) {
-                        t.moveTimer = 0;
-                        t.targetX = Math.max(100, Math.min(window.innerWidth - 100, t.x + (Math.random() - 0.5) * 260));
-                        t.targetY = Math.max(100, Math.min(window.innerHeight - 100, t.y + (Math.random() - 0.5) * 260));
-                    }
-                    const dx = t.targetX - t.x;
-                    const dy = t.targetY - t.y;
-                    const dist = Math.hypot(dx, dy);
-                    if (dist > 3) {
-                        t.angle = Math.atan2(dy, dx);
-                        t.x += Math.cos(t.angle) * Math.min(dist, t.speed);
-                        t.y += Math.sin(t.angle) * Math.min(dist, t.speed);
-                        t.currentFrame = getShipFrame(t.angle);
+                    // Quando atacado, o NPC para no lugar e não navega!
+                    if (t.underAttack) {
+                        // Parado no lugar
+                    } else {
+                        t.moveTimer++;
+                        if (t.moveTimer > 220) {
+                            t.moveTimer = 0;
+                            t.targetX = Math.max(100, Math.min(window.innerWidth - 100, t.x + (Math.random() - 0.5) * 260));
+                            t.targetY = Math.max(100, Math.min(window.innerHeight - 100, t.y + (Math.random() - 0.5) * 260));
+                        }
+                        const dx = t.targetX - t.x;
+                        const dy = t.targetY - t.y;
+                        const dist = Math.hypot(dx, dy);
+                        if (dist > 3) {
+                            t.angle = Math.atan2(dy, dx);
+                            t.x += Math.cos(t.angle) * Math.min(dist, t.speed);
+                            t.y += Math.sin(t.angle) * Math.min(dist, t.speed);
+                            t.currentFrame = getShipFrame(t.angle);
+                        }
                     }
                 } else if (t.type === 'monster') {
                     // ONDULAÇÃO SUAVE DO MONSTRO (0.015 em vez de 0.08 - sem girar)
@@ -590,7 +597,12 @@
                             // DANO CONSOLIDADO: sobe uma única vez quando a salva atinge o alvo
                             if (!salvo.damageShown) {
                                 salvo.damageShown = true;
-                                salvo.target.hp = Math.max(0, salvo.target.hp - salvo.totalDamage);
+                                salvo.target.underAttack = true; // NPC para imediatamente no lugar!
+                                if (salvo.target.id === 'npc1') {
+                                    salvo.target.hp = salvo.target.maxHp; // Vida infinita mantida sempre cheia
+                                } else {
+                                    salvo.target.hp = Math.max(0, salvo.target.hp - salvo.totalDamage);
+                                }
                                 damageNumbers.push({
                                     text: '-' + salvo.totalDamage.toLocaleString(),
                                     x: salvo.target.x,
