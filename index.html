@@ -438,14 +438,24 @@
                 }
 
                 const balls = [];
-                // 3 bolas nítidas separadas no tempo e espaço (microintervalo clássico entre os disparos da bateria)
-                const offsets = [-14, 0, 14];
-                const delays = [0, 4, 8];
-                const targetOffsets = [
-                    { x: -12, y: -6 },
-                    { x: 4, y: 8 },
-                    { x: 10, y: -10 }
+                // Calcular eixo longitudinal do navio inimigo (proa até a popa)
+                const targetAngle = selectedTarget.angle || 0;
+                const cosT = Math.cos(targetAngle);
+                const sinT = Math.sin(targetAngle);
+
+                // Pontos de impacto dramáticos e nítidos:
+                // 1º: Ponta (Proa / frente)
+                // 2º: Meio (Convés central)
+                // 3º: Traseira (Popa)
+                const hullPoints = [
+                    { x: cosT * 22, y: sinT * 22 },    // Proa (frente)
+                    { x: 0, y: 0 },                    // Meio (mastro central)
+                    { x: -cosT * 22, y: -sinT * 22 }   // Popa (traseira)
                 ];
+
+                // Delays em escadinha (0 frames, 9 frames (~150ms), 18 frames (~300ms))
+                const delays = [0, 9, 18];
+                const offsets = [-16, 0, 16];
 
                 for (let i = 0; i < 3; i++) {
                     const spawnX = player.x + Math.cos(broadsideAngle) * (sideDist + offsets[i]);
@@ -455,12 +465,12 @@
                         startY: spawnY,
                         x: spawnX,
                         y: spawnY,
-                        targetX: selectedTarget.x + targetOffsets[i].x,
-                        targetY: selectedTarget.y + targetOffsets[i].y,
+                        targetX: selectedTarget.x + hullPoints[i].x,
+                        targetY: selectedTarget.y + hullPoints[i].y,
                         progress: 0,
                         delay: delays[i],
-                        speed: 0.024,
-                        arcHeight: 48 + i * 6,
+                        speed: 0.022, // velocidade fluida para ver bem a subida e descida
+                        arcHeight: 52 + i * 4,
                         hasHit: false
                     });
                 }
