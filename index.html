@@ -445,14 +445,13 @@
                 const cosT = Math.cos(targetAngle);
                 const sinT = Math.sin(targetAngle);
 
-                // Pontos de impacto dramáticos e nítidos:
-                // 1º: Ponta (Proa / frente)
-                // 2º: Meio (Convés central)
-                // 3º: Traseira (Popa)
+                // Pontos de impacto rigorosamente contidos no convés do navio:
+                // Raio fechado (14px) e offset Y (-6px) para casar perfeitamente com o convés/madeira do navio
+                const deckElevationY = -6;
                 const hullPoints = [
-                    { x: cosT * 22, y: sinT * 22 },    // Proa (frente)
-                    { x: 0, y: 0 },                    // Meio (mastro central)
-                    { x: -cosT * 22, y: -sinT * 22 }   // Popa (traseira)
+                    { x: cosT * 14, y: sinT * 14 + deckElevationY },  // Proa (convés frontal)
+                    { x: 0, y: deckElevationY },                      // Meio (convés central)
+                    { x: -cosT * 14, y: -sinT * 14 + deckElevationY } // Popa (convés traseiro)
                 ];
 
                 // Delays em escadinha (0 frames, 9 frames (~150ms), 18 frames (~300ms))
@@ -585,7 +584,7 @@
                             b.hasHit = true;
                             salvo.hitsCount++;
 
-                            // EXPLOSÃO INDIVIDUAL DA BOLA NO NAVIO INIMIGO!
+                            // EXPLOSÃO INDIVIDUAL DA BOLA EXATAMENTE NO CONVÉS DO NAVIO!
                             if (explosionSpriteFrames.length > 0) {
                                 activeExplosions.push({
                                     x: b.targetX,
