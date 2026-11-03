@@ -425,9 +425,9 @@
                     finished: false
                 });
             } else {
-                // Canhões no navio: 3 bolas de canhão convergentes
+                // Canhões no navio: 3 bolas de canhão bem visíveis com trajetórias e impactos individuais
                 const broadsideAngle = player.angle + Math.PI / 2;
-                const sideDist = 18;
+                const sideDist = 20;
 
                 if (smokeSpriteFrames.length > 0) {
                     activeSmokes.push({
@@ -438,30 +438,41 @@
                 }
 
                 const balls = [];
-                for (let i = -1; i <= 1; i++) {
-                    const spawnX = player.x + Math.cos(broadsideAngle) * (sideDist * i);
-                    const spawnY = player.y + Math.sin(broadsideAngle) * (sideDist * i);
+                // 3 bolas nítidas separadas no tempo e espaço (microintervalo clássico entre os disparos da bateria)
+                const offsets = [-14, 0, 14];
+                const delays = [0, 4, 8];
+                const targetOffsets = [
+                    { x: -12, y: -6 },
+                    { x: 4, y: 8 },
+                    { x: 10, y: -10 }
+                ];
+
+                for (let i = 0; i < 3; i++) {
+                    const spawnX = player.x + Math.cos(broadsideAngle) * (sideDist + offsets[i]);
+                    const spawnY = player.y + Math.sin(broadsideAngle) * (sideDist + offsets[i]);
                     balls.push({
                         startX: spawnX,
                         startY: spawnY,
                         x: spawnX,
                         y: spawnY,
-                        targetX: selectedTarget.x + (Math.random() - 0.5) * 20,
-                        targetY: selectedTarget.y + (Math.random() - 0.5) * 20,
+                        targetX: selectedTarget.x + targetOffsets[i].x,
+                        targetY: selectedTarget.y + targetOffsets[i].y,
                         progress: 0,
-                        speed: 0.026 + (Math.random() * 0.003),
-                        arcHeight: 50 + Math.random() * 12
+                        delay: delays[i],
+                        speed: 0.024,
+                        arcHeight: 48 + i * 6,
+                        hasHit: false
                     });
                 }
 
-                // DANO TOTAL CONSOLIDADO (Soma dos 3 tiros em 1 só número)
                 const totalDmg = Math.floor(7500 + Math.random() * 1800);
                 projectileSalvos.push({
                     type: 'cannonball',
                     target: selectedTarget,
                     balls: balls,
                     totalDamage: totalDmg,
-                    finished: false
+                    damageShown: false,
+                    hitsCount: 0
                 });
             }
         }
@@ -524,66 +535,81 @@
                 }
             }
 
-            // Projéteis e Salvas
+            // Projéteis e Salvas (3 bolas caindo e explodindo individualmente no casco)
             for (let sIdx = projectileSalvos.length - 1; sIdx >= 0; sIdx--) {
                 const salvo = projectileSalvos[sIdx];
-                let allLanded = true;
+                let allFinished = true;
 
                 for (let b of salvo.balls) {
-                    b.progress += b.speed;
-                    if (salvo.type === 'cannonball') {
-                        const curX = b.startX + (b.targetX - b.startX) * b.progress;
-                        const curY = b.startY + (b.targetY - b.startY) * b.progress;
-                        b.x = curX;
-                        b.y = curY - Math.sin(b.progress * Math.PI) * b.arcHeight;
-                        b.shadowX = curX;
-                        b.shadowY = curY;
-                    } else if (salvo.type === 'harpoon') {
-                        b.x = b.startX + (b.targetX - b.startX) * b.progress;
-                        b.y = b.startY + (b.targetY - b.startY) * b.progress;
+                    if (b.delay && b.delay > 0) {
+                        b.delay--;
+                        allFinished = false;
+                        continue;
                     }
-                    if (b.progress < 1.0) allLanded = false;
+
+                    if (b.progress < 1.0) {
+                        b.progress += b.speed;
+                        allFinished = false;
+
+                        if (salvo.type === 'cannonball') {
+                            const curX = b.startX + (b.targetX - b.startX) * b.progress;
+                            const curY = b.startY + (b.targetY - b.startY) * b.progress;
+                            b.x = curX;
+                            b.y = curY - Math.sin(b.progress * Math.PI) * b.arcHeight;
+                            b.shadowX = curX;
+                            b.shadowY = curY;
+                        } else if (salvo.type === 'harpoon') {
+                            b.x = b.startX + (b.targetX - b.startX) * b.progress;
+                            b.y = b.startY + (b.targetY - b.startY) * b.progress;
+                        }
+
+                        // MOMENTO DO IMPACTO DESTA BOLA ESPECÍFICA NO CASCO
+                        if (b.progress >= 1.0 && !b.hasHit) {
+                            b.hasHit = true;
+                            salvo.hitsCount++;
+
+                            // EXPLOSÃO INDIVIDUAL DA BOLA NO NAVIO INIMIGO!
+                            if (explosionSpriteFrames.length > 0) {
+                                activeExplosions.push({
+                                    x: b.targetX,
+                                    y: b.targetY,
+                                    frame: 0
+                                });
+                            }
+
+                            // DANO CONSOLIDADO: sobe uma única vez quando a salva atinge o alvo
+                            if (!salvo.damageShown) {
+                                salvo.damageShown = true;
+                                salvo.target.hp = Math.max(0, salvo.target.hp - salvo.totalDamage);
+                                damageNumbers.push({
+                                    text: '-' + salvo.totalDamage.toLocaleString(),
+                                    x: salvo.target.x,
+                                    y: salvo.target.y - 15,
+                                    color: '#ffd700',
+                                    alpha: 1.0
+                                });
+
+                                if (salvo.target.hp === 0) {
+                                    player.gold += salvo.target.type === 'monster' ? 1200 : 3800;
+                                    goldVal.innerText = player.gold.toLocaleString();
+                                    if (selectedTarget === salvo.target) {
+                                        selectedTarget = null;
+                                        player.autoAttacking = false;
+                                        slotAttack.classList.remove('active');
+                                    }
+                                    const tgt = salvo.target;
+                                    setTimeout(() => {
+                                        tgt.hp = tgt.maxHp;
+                                        tgt.x = window.innerWidth * (0.4 + Math.random() * 0.4);
+                                        tgt.y = window.innerHeight * (0.2 + Math.random() * 0.6);
+                                    }, 5000);
+                                }
+                            }
+                        }
+                    }
                 }
 
-                // Quando a salva atinge o alvo
-                if (allLanded && !salvo.finished) {
-                    salvo.finished = true;
-                    salvo.target.hp = Math.max(0, salvo.target.hp - salvo.totalDamage);
-
-                    // Explosão clássica original
-                    if (explosionSpriteFrames.length > 0) {
-                        activeExplosions.push({
-                            x: salvo.target.x,
-                            y: salvo.target.y,
-                            frame: 0
-                        });
-                    }
-
-                    // DANO ÚNICO CONSOLIDADO DO SEAFIGHT (Apenas 1 número em amarelo ouro clássico)
-                    damageNumbers.push({
-                        text: '-' + salvo.totalDamage.toLocaleString(),
-                        x: salvo.target.x,
-                        y: salvo.target.y - 15,
-                        color: '#ffd700',
-                        alpha: 1.0
-                    });
-
-                    if (salvo.target.hp === 0) {
-                        player.gold += salvo.target.type === 'monster' ? 1200 : 3800;
-                        goldVal.innerText = player.gold.toLocaleString();
-                        if (selectedTarget === salvo.target) {
-                            selectedTarget = null;
-                            player.autoAttacking = false;
-                            slotAttack.classList.remove('active');
-                        }
-                        const tgt = salvo.target;
-                        setTimeout(() => {
-                            tgt.hp = tgt.maxHp;
-                            tgt.x = window.innerWidth * (0.4 + Math.random() * 0.4);
-                            tgt.y = window.innerHeight * (0.2 + Math.random() * 0.6);
-                        }, 5000);
-                    }
-
+                if (allFinished) {
                     projectileSalvos.splice(sIdx, 1);
                 }
             }
