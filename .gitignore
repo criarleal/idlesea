@@ -1,0 +1,58 @@
+# Binários grandes e temporários
+*.zip
+SeafightMain.swf
+extracted/
+extracted_images/
+node_modules/
+.DS_Store
+
+# Scripts auxiliares e de extração/inspeção pontual
+dump_*.js
+extract_*.js
+inspect_*.js
+check_*.js
+find_*.js
+parse_*.js
+scan_*.js
+test_*.js
+update_*.js
+apply_*.js
+fix_*.js
+make_*.js
+upgrade_*.js
+process_*.js
+revert_*.js
+calibrate_*.js
+embed_game.js
+package_assets.js
+generate_huge_catalog.js
+compare_*.js
+refine_*.js
+add_ambient.js
+server.js
+list_all_ships_zip.js
+game.html
+
+# Arquivos brutos/temporários de imagens e extração de frames
+*.alpha
+*.jpg
+*.png
+!favicon.png
+
+# Páginas e ferramentas de calibração/inspeção pontual
+calibrate_*.html
+check_*.html
+compass_test.html
+configurador_*.html
+diag_frames.html
+game_template.html
+inspect_*.html
+preview_*.html
+catalogo_designs.html
+
+# Dumps e metadados brutos de lang/xml/json gerados
+descriptions.lang.php
+labels.lang.php
+npcnames.php
+ship.res.xml
+assets_data.json
